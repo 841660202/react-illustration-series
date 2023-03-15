@@ -97,6 +97,7 @@ function pushEffect(tag, create, destroy, deps) {
     if (lastEffect === null) {
       componentUpdateQueue.lastEffect = effect.next = effect;
     } else {
+      // 一个环形链表，在环的尾部添加
       const firstEffect = lastEffect.next;
       lastEffect.next = effect;
       effect.next = firstEffect;
@@ -152,13 +153,13 @@ export type Effect = {|
 
 1. `fiber.flags`不同
 
-- 使用`useEffect`时: `fiber.flags = UpdateEffect | PassiveEffect`.
-- 使用`useLayoutEffect`时: `fiber.flags = UpdateEffect`.
+   - 使用`useEffect`时: `fiber.flags = UpdateEffect | PassiveEffect`.
+   - 使用`useLayoutEffect`时: `fiber.flags = UpdateEffect`.
 
 2. `effect.tag`不同
 
-- 使用`useEffect`时: `effect.tag = HookHasEffect | HookPassive`.
-- 使用`useLayoutEffect`时: `effect.tag = HookHasEffect | HookLayout`.
+   - 使用`useEffect`时: `effect.tag = HookHasEffect | HookPassive`.
+   - 使用`useLayoutEffect`时: `effect.tag = HookHasEffect | HookLayout`.
 
 ## 处理 Effect 回调
 
@@ -326,8 +327,8 @@ function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
 
 1. 调用关系: `commitLayoutEffects->commitLayoutEffectOnFiber(commitLifeCycles)->commitHookEffectListMount`.
 
-    - 注意在调用`commitHookEffectListMount(HookLayout | HookHasEffect, finishedWork)`时, 参数是`HookLayout | HookHasEffect`,所以只处理由`useLayoutEffect()`创建的`effect`.
-    - 调用`effect.create()`之后, 将返回值赋值到`effect.destroy`.
+   - 注意在调用`commitHookEffectListMount(HookLayout | HookHasEffect, finishedWork)`时, 参数是`HookLayout | HookHasEffect`,所以只处理由`useLayoutEffect()`创建的`effect`.
+   - 调用`effect.create()`之后, 将返回值赋值到`effect.destroy`.
 
 2. 为`flushPassiveEffects`做准备
 
@@ -534,4 +535,6 @@ function commitMutationEffects(
 
 ## 总结
 
-本节分析了`副作用Hook`从创建到销毁的全部过程, 在`react`内部, 依靠`fiber.flags`和`effect.tag`实现了对`effect`的精准识别. 在`commitRoot`阶段, 对不同类型的`effect`进行处理, 先后调用`effect.destroy()`和`effect.create()`.
+1. 本节分析了`副作用Hook`从创建到销毁的全部过程,
+2. 在`react`内部, 依靠`fiber.flags`和`effect.tag`实现了对`effect`的精准识别.
+3. 在`commitRoot`阶段, 对不同类型的`effect`进行处理, 先后调用`effect.destroy()`和`effect.create()`.
