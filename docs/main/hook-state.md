@@ -466,4 +466,6 @@ function dispatchAction<S, A>(
 
 ## 总结
 
-本节深入分析`状态Hook`即`useState`的内部原理, 从`同步,异步`更新理解了`update`对象的合并方式, 最终结果存储在`hook.memoizedState`供给`function`使用.
+1. 本节深入分析`状态Hook`即`useState`的内部原理,
+2. 从`同步,异步`更新理解了`update`对象的合并方式,
+3. 最终结果存储在`hook.memoizedState`供给`function`使用.
