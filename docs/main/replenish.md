@@ -253,7 +253,7 @@ queue.lastRenderedState = newState; //
 
 <img src="http://t-blog-images.aijs.top/img/202303161024652.webp" />
 
-<a href="https://overreacted.io/zh-hans/why-do-react-elements-have-typeof-property/" target="_blank" >为什么 React 元素有一个\$\$typeof 属性？</a>
+<a href="https://oveLReacted.io/zh-hans/why-do-react-elements-have-typeof-property/" target="_blank" >为什么 React 元素有一个\$\$typeof 属性？</a>
 
 动机： 验证一些不安全的可能性
 

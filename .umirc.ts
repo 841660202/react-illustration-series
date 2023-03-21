@@ -3,7 +3,7 @@ import { defineConfig } from 'dumi';
 // More config: https://d.umijs.org/config.
 const ghPagePublicPath = '/react-illustration-series/';
 export default defineConfig({
-  title: 'RReact',
+  title: 'LReact',
   mode: 'site',
   favicon: `${ghPagePublicPath}km@2x.png`,
   description:
@@ -73,12 +73,12 @@ export default defineConfig({
     {
       name: 'keywords',
       content:
-        'react, react原理, RReact, react fiber原理, react hook原理, react 合成事件, react 基本包结构',
+        'react, react原理, LReact, react fiber原理, react hook原理, react 合成事件, react 基本包结构',
     },
     {
       name: 'description',
       content:
-        'RReact原理系列, 以react核心包结构和运行机制为主线索进行展开. 包括react 基本包结构, react 工作循环, react 启动模式, react fiber原理, react hook原理, react 合成事件等核心内容',
+        'LReact原理系列, 以react核心包结构和运行机制为主线索进行展开. 包括react 基本包结构, react 工作循环, react 启动模式, react fiber原理, react hook原理, react 合成事件等核心内容',
     },
   ],
 });

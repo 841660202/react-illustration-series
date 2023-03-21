@@ -326,7 +326,12 @@ function beginWork(
 3. 根据`ReactElement`对象, 调用`reconcileChildren`生成`Fiber`子节点(只生成`次级子节点`)
    - 根据实际情况, 设置`fiber.flags`
 
-不同的`updateXXX`函数处理的`fiber`节点类型不同, 总的目的是为了向下生成子节点. 在这个过程中把一些需要持久化的数据挂载到`fiber`节点上(如`fiber.stateNode`,`fiber.memoizedState`等); 把`fiber`节点的特殊操作设置到`fiber.flags`(如:`节点ref`,`class组件的生命周期`,`function组件的hook`,`节点删除`等).
+**不同的`updateXXX`函数处理的`fiber`节点类型不同, 总的目的是为了向下生成子节点.**
+
+在这个过程中
+
+1. 把一些需要持久化的数据挂载到`fiber`节点上(如`fiber.stateNode`,`fiber.memoizedState`等);
+2. 把`fiber`节点的特殊操作设置到`fiber.flags`(如:`节点ref`,`class组件的生命周期`,`function组件的hook`,`节点删除`等).
 
 这里列出`updateHostRoot`, `updateHostComponent`的代码, 对于其他常用 case 的分析(如`class`类型, `function`类型), 在`状态组件`章节中进行探讨.
 
@@ -340,6 +345,8 @@ function updateHostRoot(current, workInProgress, renderLanes) {
   const nextProps = workInProgress.pendingProps;
   const prevState = workInProgress.memoizedState;
   const prevChildren = prevState !== null ? prevState.element : null;
+
+  // QUES: 这块逻辑很常见？
   cloneUpdateQueue(current, workInProgress);
   // 遍历updateQueue.shared.pending, 提取有足够优先级的update对象, 计算出最终的状态 workInProgress.memoizedState
   processUpdateQueue(workInProgress, nextProps, null, renderLanes);
@@ -394,8 +401,8 @@ function updateHostComponent(
 `completeUnitOfWork(unitOfWork)`([源码地址](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L1670-L1802)), 处理 `beginWork` 阶段已经创建出来的 `fiber` 节点, 核心逻辑:
 
 1.  调用`completeWork`
-    - 给`fiber`节点(tag=HostComponent, HostText)创建 DOM 实例, 设置`fiber.stateNode`局部状态(如`tag=HostComponent, HostText`节点: fiber.stateNode 指向这个 DOM 实例).
-    - 为 DOM 节点设置属性, 绑定事件(这里先说明有这个步骤, 详细的事件处理流程, 在`合成事件原理`中详细说明).
+    - 给`fiber`节点(tag=HostComponent, HostText)创建 DOM 实例,设置`fiber.stateNode`局部状态(如`tag=HostComponent, HostText`节点: fiber.stateNode 指向这个 DOM 实例).
+    - 为 DOM 节点设置属性, 绑定事件(这里先说明有这个步骤, 详细的事件处理流程, 在`合成事件原理`中详细说明). <span style="color: red">想到个事情，绑定原生事件？</span>
     - 设置`fiber.flags`标记
 2.  把当前 `fiber` 对象的副作用队列(`firstEffect`和`lastEffect`)添加到父节点的副作用队列之后, 更新父节点的`firstEffect`和`lastEffect`指针.
 3.  识别`beginWork`阶段设置的`fiber.flags`, 判断当前 `fiber` 是否有副作用(增,删,改), 如果有, 需要将当前 `fiber` 加入到父节点的`effects`队列, 等待`commit`阶段处理.
@@ -514,7 +521,7 @@ function completeWork(
         workInProgress.stateNode = instance;
         if (
           // 3. 设置DOM对象的属性, 绑定事件等
-          finalizeInitialChildren(
+          finalizeInitialChildren( // https://github.com/facebook/react/blob/12adaffef7105e2714f82651ea51936c563fe15c/packages/react-test-renderer/src/ReactTestHostConfig.js#LL180-L188C2    返回false
             instance,
             type,
             newProps,
@@ -536,6 +543,250 @@ function completeWork(
 ```
 
 可以看到在满足条件的时候也会设置`fiber.flags`, 所以设置`fiber.flags`并非只在`beginWork`阶段.
+
+### finalizeInitialChildren
+
+```js
+export function finalizeInitialChildren(
+  domElement: Instance,
+  type: string,
+  props: Props,
+  hostContext: HostContext,
+): boolean {
+  setInitialProperties(domElement, type, props);
+  switch (type) {
+    case 'button':
+    case 'input':
+    case 'select':
+    case 'textarea':
+      return !!props.autoFocus;
+    case 'img':
+      return true;
+    default:
+      return false;
+  }
+}
+```
+
+### setInitialProperties
+
+```js
+export function setInitialProperties(
+  domElement: Element,
+  tag: string,
+  rawProps: Object,
+): void {
+  const isCustomComponentTag = isCustomComponent(tag, rawProps);
+  // TODO: Make sure that we check isMounted before firing any of these events.
+  let props: Object;
+  switch (tag) {
+    case 'dialog':
+      listenToNonDelegatedEvent('cancel', domElement);
+      listenToNonDelegatedEvent('close', domElement);
+      props = rawProps;
+      break;
+    case 'iframe':
+    case 'object':
+    case 'embed':
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the load event.
+      listenToNonDelegatedEvent('load', domElement);
+      props = rawProps;
+      break;
+    case 'video':
+    case 'audio':
+      // We listen to these events in case to ensure emulated bubble
+      // listeners still fire for all the media events.
+      for (let i = 0; i < mediaEventTypes.length; i++) {
+        listenToNonDelegatedEvent(mediaEventTypes[i], domElement);
+      }
+      props = rawProps;
+      break;
+    case 'source':
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the error event.
+      listenToNonDelegatedEvent('error', domElement);
+      props = rawProps;
+      break;
+    case 'img':
+    case 'image':
+    case 'link':
+      // We listen to these events in case to ensure emulated bubble
+      // listeners still fire for error and load events.
+      listenToNonDelegatedEvent('error', domElement);
+      listenToNonDelegatedEvent('load', domElement);
+      props = rawProps;
+      break;
+    case 'details':
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the toggle event.
+      listenToNonDelegatedEvent('toggle', domElement);
+      props = rawProps;
+      break;
+    case 'input':
+      ReactDOMInputInitWrapperState(domElement, rawProps);
+      props = ReactDOMInputGetHostProps(domElement, rawProps);
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the invalid event.
+      listenToNonDelegatedEvent('invalid', domElement);
+      break;
+    case 'option':
+      ReactDOMOptionValidateProps(domElement, rawProps);
+      props = rawProps;
+      break;
+    case 'select':
+      ReactDOMSelectInitWrapperState(domElement, rawProps);
+      props = ReactDOMSelectGetHostProps(domElement, rawProps);
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the invalid event.
+      listenToNonDelegatedEvent('invalid', domElement);
+      break;
+    case 'textarea':
+      ReactDOMTextareaInitWrapperState(domElement, rawProps);
+      props = ReactDOMTextareaGetHostProps(domElement, rawProps);
+      // We listen to this event in case to ensure emulated bubble
+      // listeners still fire for the invalid event.
+      listenToNonDelegatedEvent('invalid', domElement);
+      break;
+    default:
+      props = rawProps;
+  }
+  assertValidProps(tag, props);
+
+  setInitialDOMProperties(tag, domElement, props, isCustomComponentTag);
+
+  switch (tag) {
+    case 'input':
+      // TODO: Make sure we check if this is still unmounted or do any clean
+      // up necessary since we never stop tracking anymore.
+      track((domElement: any));
+      ReactDOMInputPostMountWrapper(domElement, rawProps, false);
+      break;
+    case 'textarea':
+      // TODO: Make sure we check if this is still unmounted or do any clean
+      // up necessary since we never stop tracking anymore.
+      track((domElement: any));
+      ReactDOMTextareaPostMountWrapper(domElement, rawProps);
+      break;
+    case 'option':
+      ReactDOMOptionPostMountWrapper(domElement, rawProps);
+      break;
+    case 'select':
+      ReactDOMSelectPostMountWrapper(domElement, rawProps);
+      break;
+    default:
+      if (typeof props.onClick === 'function') {
+        // TODO: This cast may not be sound for SVG, MathML or custom elements.
+        trapClickOnNonInteractiveElement(((domElement: any): HTMLElement));
+      }
+      break;
+  }
+}
+```
+
+listenToNonDelegatedEvent 在合成事件中。。。 <a href="./main/synthetic-event" target="_blank" >react 的事件体系, 不是全部都通过事件委托来实现的. 有一些特殊情况, 是直接绑定到对应 DOM 元素上的(如:scroll, load), 它们都通过 listenToNonDelegatedEvent 函数进行绑定.</a>
+
+### isCustomComponent
+
+```js
+function isCustomComponent(tagName: string, props: Object): boolean {
+  if (tagName.indexOf('-') === -1) {
+    return typeof props.is === 'string';
+  }
+  switch (tagName) {
+    // These are reserved SVG and MathML elements.
+    // We don't mind this list too much because we expect it to never grow.
+    // The alternative is to track the namespace in a few places which is convoluted.
+    // https://w3c.github.io/webcomponents/spec/custom/#custom-elements-core-concepts
+    case 'annotation-xml':
+    case 'color-profile':
+    case 'font-face':
+    case 'font-face-src':
+    case 'font-face-uri':
+    case 'font-face-format':
+    case 'font-face-name':
+    case 'missing-glyph':
+      return false;
+    default:
+      return true;
+  }
+}
+
+export default isCustomComponent;
+```
+
+### setInitialDOMProperties
+
+```js
+function setInitialDOMProperties(
+  tag: string,
+  domElement: Element,
+  nextProps: Object,
+  isCustomComponentTag: boolean,
+): void {
+  for (const propKey in nextProps) {
+    if (!nextProps.hasOwnProperty(propKey)) {
+      continue;
+    }
+    const nextProp = nextProps[propKey];
+    if (propKey === STYLE) {
+      if (__DEV__) {
+        if (nextProp) {
+          // Freeze the next style object so that we can assume it won't be
+          // mutated. We have already warned for this in the past.
+          Object.freeze(nextProp);
+        }
+      }
+      // Relies on `updateStylesByID` not mutating `styleUpdates`.
+      setValueForStyles(domElement, nextProp);
+    } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
+      const nextHtml = nextProp ? nextProp[HTML] : undefined;
+      if (nextHtml != null) {
+        setInnerHTML(domElement, nextHtml);
+      }
+    } else if (propKey === CHILDREN) {
+      if (typeof nextProp === 'string') {
+        // Avoid setting initial textContent when the text is empty. In IE11 setting
+        // textContent on a <textarea> will cause the placeholder to not
+        // show within the <textarea> until it has been focused and blurred again.
+        // https://github.com/facebook/react/issues/6731#issuecomment-254874553
+        const canSetTextContent =
+          (!enableHostSingletons || tag !== 'body') &&
+          (tag !== 'textarea' || nextProp !== '');
+        if (canSetTextContent) {
+          setTextContent(domElement, nextProp);
+        }
+      } else if (typeof nextProp === 'number') {
+        const canSetTextContent = !enableHostSingletons || tag !== 'body';
+        if (canSetTextContent) {
+          setTextContent(domElement, '' + nextProp);
+        }
+      }
+    } else if (
+      propKey === SUPPRESS_CONTENT_EDITABLE_WARNING ||
+      propKey === SUPPRESS_HYDRATION_WARNING
+    ) {
+      // Noop
+    } else if (propKey === AUTOFOCUS) {
+      // We polyfill it separately on the client during commit.
+      // We could have excluded it in the property list instead of
+      // adding a special case here, but then it wouldn't be emitted
+      // on server rendering (but we *do* want to emit it in SSR).
+    } else if (registrationNameDependencies.hasOwnProperty(propKey)) {
+      if (nextProp != null) {
+        if (__DEV__ && typeof nextProp !== 'function') {
+          warnForInvalidEventListener(propKey, nextProp);
+        }
+        if (propKey === 'onScroll') {
+          listenToNonDelegatedEvent('scroll', domElement);
+        }
+      }
+    } else if (nextProp != null) {
+      setValueForProperty(domElement, propKey, nextProp, isCustomComponentTag);
+    }
+  }
+}
+```
 
 ## 过程图解
 
