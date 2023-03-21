@@ -15,6 +15,22 @@ title: 堆排序
 1. 父节点的值>=子节点的值(最大堆), 父节点的值<=子节点的值(最小堆). 每个节点的左子树和右子树都是一个二叉堆.
 2. 假设一个数组`[k0, k1, k2, ...kn]`下标从 0 开始. 则`ki <= k2i+1,ki <= k2i+2` 或者 `ki >= k2i+1,ki >= k2i+2` (i = 0,1,2,3 .. n/2)
 
+## 理解概念
+
+<img src="http://t-blog-images.aijs.top/img/202303171537651.webp" />
+
+<a href="https://blog.csdn.net/weixin_44627813/article/details/112837189" target="_blank" >图解二叉堆：堆排序</a>
+
+> 总结：
+>
+> 1.从后往前建堆，
+>
+> 保证了每次的左右儿子节点已经是最小堆了，当父亲节点加入时，只需要 donw 一次操作，就能使父亲节点加入后成为一个更大的堆。最小元素一直往堆顶调，所以建完堆后最小元素就在第一个，满足最小堆的性质。
+>
+> 2.从前往后建堆，
+>
+> 不能保证当前堆的堆顶元素是当前堆中的最小元素，所以建堆完成之后不具有最小堆的性质。
+
 ## 基本使用
 
 假设现在有一个乱序数组, [5,8,0,10,4,6,1], 现在将其构造成一个最小堆
@@ -69,7 +85,7 @@ const minHeapSort = arr => {
 
 // 把整个数组构造成最小堆
 const buildMinHeap = arr => {
-  if(arr.length < 2) {
+  if (arr.length < 2) {
     return arr;
   }
   const startIndex = Math.floor(arr.length / 2 - 1);
@@ -226,3 +242,7 @@ function siftDown(heap, node, i) {
 ## 总结
 
 本节介绍了`堆排序`的基本使用, 并说明了`堆排序`在`react`源码中的应用. 在阅读`scheduler`包的源码时, 会更加清晰的理解作者的思路.
+
+## 其他链接
+
+<a href="https://juejin.cn/post/6983273957734481933" target="_blank" >React 的小顶堆排序法</a>

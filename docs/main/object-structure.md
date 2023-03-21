@@ -61,7 +61,10 @@ export type ReactElement = {|
 
 2. `type`属性决定了节点的种类:
 
-- 它的值可以是字符串(代表`div,span`等 dom 节点), 函数(代表`function, class`等节点), 或者 react 内部定义的节点类型(`portal,context,fragment`等)
+- 它的值可以是
+  - 字符串(代表`div,span`等 dom 节点),
+  - 函数(代表`function, class`等节点),
+  - 或者 react 内部定义的节点类型(`portal,context,fragment`等)
 - 在`reconciler`阶段, 会根据 type 执行不同的逻辑(在 fiber 构建阶段详细解读).
   - 如 type 是一个字符串类型, 则直接使用.
   - 如 type 是一个`ReactComponent`类型, 则会调用其 render 方法获取子节点.
@@ -145,8 +148,12 @@ class App_Content extends react_default.a.Component {
 
 上述示例演示了`ReactComponent`是诸多`ReactElement`种类中的一种情况, 但是由于`ReactComponent`是 class 类型, 自有它的特殊性(可[对照源码](https://github.com/facebook/react/blob/v17.0.2/packages/react/src/ReactBaseClasses.js), 更容易理解).
 
-1. `ReactComponent`是 class 类型, 继承父类`Component`, 拥有特殊的方法(`setState`,`forceUpdate`)和特殊的属性(`context`,`updater`等).
-2. 在`reconciler`阶段, 会依据`ReactElement`对象的特征, 生成对应的 fiber 节点. 当识别到`ReactElement`对象是 class 类型的时候, 会触发`ReactComponent`对象的生命周期, 并调用其 `render`方法, 生成`ReactElement`子节点.
+1. `ReactComponent`是 class 类型,
+   1. 继承父类`Component`,
+   2. 拥有特殊的方法(`setState`,`forceUpdate`)
+   3. 特殊的属性(`context`,`updater`等).
+2. 在`reconciler`阶段, 会依据`ReactElement`对象的特征, 生成对应的 fiber 节点.
+   1. 当识别到`ReactElement`对象是 class 类型的时候, 会触发`ReactComponent`对象的生命周期, 并调用其 `render`方法, 生成`ReactElement`子节点.
 
 ### 其他`ReactElement`
 
@@ -188,19 +195,24 @@ class App_Content extends react_default.a.Component {
 // 一个Fiber对象代表一个即将渲染或者已经渲染的组件(ReactElement), 一个组件可能对应两个fiber(current和WorkInProgress)
 // 单个属性的解释在后文(在注释中无法添加超链接)
 export type Fiber = {|
+  // 作为静态数据结构的属性
   tag: WorkTag,
-  key: null | string,
   elementType: any,
   type: any,
   stateNode: any,
+  // 用于连接其他Fiber节点形成Fiber树
   return: Fiber | null,
   child: Fiber | null,
   sibling: Fiber | null,
   index: number,
+  // 两个特殊的
+  key: null | string,
   ref:
     | null
     | (((handle: mixed) => void) & { _stringRef: ?string, ... })
     | RefObject,
+
+  // 作为动态的工作单元的属性
   pendingProps: any, // 从`ReactElement`对象传入的 props. 用于和`fiber.memoizedProps`比较可以得出属性是否变动
   memoizedProps: any, // 上一次生成子节点时用到的属性, 生成子节点之后保持在内存中
   updateQueue: mixed, // 存储state更新的队列, 当前节点的state改动之后, 都会创建一个update对象添加到这个队列中.
@@ -220,6 +232,8 @@ export type Fiber = {|
   // 优先级相关
   lanes: Lanes, // 本fiber节点的优先级
   childLanes: Lanes, // 子节点的优先级
+
+  // 指向该fiber在另一次更新时对应的fiber
   alternate: Fiber | null, // 指向内存中的另一个fiber, 每个被更新过fiber节点在内存中都是成对出现(current和workInProgress)
 
   // 性能统计相关(开启enableProfilerTimer后才会统计)
@@ -233,31 +247,51 @@ export type Fiber = {|
 
 属性解释:
 
-- `fiber.tag`: 表示 fiber 类型, 根据`ReactElement`组件的 type 进行生成, 在 react 内部共定义了[25 种 tag](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactWorkTags.js#L10-L35).
-- `fiber.key`: 和`ReactElement`组件的 key 一致.
-- `fiber.elementType`: 一般来讲和`ReactElement`组件的 type 一致
-- `fiber.type`: 一般来讲和`fiber.elementType`一致. 一些特殊情形下, 比如在开发环境下为了兼容热更新(`HotReloading`), 会对`function, class, ForwardRef`类型的`ReactElement`做一定的处理, 这种情况会区别于`fiber.elementType`, 具体赋值关系可以查看[源文件](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiber.old.js#L571-L574).
-- `fiber.stateNode`: 与`fiber`关联的局部状态节点(比如: `HostComponent`类型指向与`fiber`节点对应的 dom 节点; 根节点`fiber.stateNode`指向的是`FiberRoot`; class 类型节点其`stateNode`指向的是 class 实例).
-- `fiber.return`: 指向父节点.
-- `fiber.child`: 指向第一个子节点.
-- `fiber.sibling`: 指向下一个兄弟节点.
-- `fiber.index`: fiber 在兄弟节点中的索引, 如果是单节点默认为 0.
-- `fiber.ref`: 指向在`ReactElement`组件上设置的 ref(`string`类型的`ref`除外, 这种类型的`ref`已经不推荐使用, `reconciler`阶段会`将string`类型的`ref`转换成一个`function`类型).
-- `fiber.pendingProps`: 输入属性, 从`ReactElement`对象传入的 props. 用于和`fiber.memoizedProps`比较可以得出属性是否变动.
-- `fiber.memoizedProps`: 上一次生成子节点时用到的属性, 生成子节点之后保持在内存中. 向下生成子节点之前叫做`pendingProps`, 生成子节点之后会把`pendingProps`赋值给`memoizedProps`用于下一次比较.`pendingProps`和`memoizedProps`比较可以得出属性是否变动.
-- `fiber.updateQueue`: 存储`update更新对象`的队列, 每一次发起更新, 都需要在该队列上创建一个`update对象`.
-- `fiber.memoizedState`: 上一次生成子节点之后保持在内存中的局部状态.
-- `fiber.dependencies`: 该 fiber 节点所依赖的(contexts, events)等, 在`context`机制章节详细说明.
-- `fiber.mode`: 二进制位 Bitfield,继承至父节点,影响本 fiber 节点及其子树中所有节点. 与 react 应用的运行模式有关(有 ConcurrentMode, BlockingMode, NoMode 等选项).
-- `fiber.flags`: 标志位, 副作用标记(在 16.x 版本中叫做`effectTag`, 相应[pr](https://github.com/facebook/react/pull/19755)), 在[`ReactFiberFlags.js`](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberFlags.js#L10-L41)中定义了所有的标志位. `reconciler`阶段会将所有拥有`flags`标记的节点添加到副作用链表中, 等待 commit 阶段的处理.
-- `fiber.subtreeFlags`: 替代 16.x 版本中的 firstEffect, nextEffect. 默认未开启, 当设置了[enableNewReconciler=true](https://github.com/facebook/react/blob/v17.0.2/packages/shared/ReactFeatureFlags.js#L93) 才会启用, 本系列只跟踪稳定版的代码, 未来版本不会深入解读, [使用示例见源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L690-L714).
-- `fiber.deletions`: 存储将要被删除的子节点. 默认未开启, 当设置了[enableNewReconciler=true](https://github.com/facebook/react/blob/v17.0.2/packages/shared/ReactFeatureFlags.js#L93) 才会启用, 本系列只跟踪稳定版的代码, 未来版本不会深入解读, [使用示例见源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactChildFiber.new.js#L275-L287).
-- `fiber.nextEffect`: 单向链表, 指向下一个有副作用的 fiber 节点.
-- `fiber.firstEffect`: 指向副作用链表中的第一个 fiber 节点.
-- `fiber.lastEffect`: 指向副作用链表中的最后一个 fiber 节点.
-- `fiber.lanes`: 本 fiber 节点所属的优先级, 创建 fiber 的时候设置.
-- `fiber.childLanes`: 子节点所属的优先级.
-- `fiber.alternate`: 指向内存中的另一个 fiber, 每个被更新过 fiber 节点在内存中都是成对出现(current 和 workInProgress)
+1. 作为静态数据结构的属性
+
+   - `fiber.tag`: 表示 fiber 类型, 根据`ReactElement`组件的 type 进行生成, 在 react 内部共定义了[25 种 tag](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactWorkTags.js#L10-L35).
+   - `fiber.elementType`: 一般来讲和`ReactElement`组件的 type 一致
+   - `fiber.type`: 一般来讲和`fiber.elementType`一致. 一些特殊情形下, 比如在开发环境下为了兼容热更新(`HotReloading`), 会对`function, class, ForwardRef`类型的`ReactElement`做一定的处理, 这种情况会区别于`fiber.elementType`, 具体赋值关系可以查看[源文件](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiber.old.js#L571-L574).
+   - `fiber.stateNode`: 与`fiber`关联的局部状态节点(比如: `HostComponent`类型指向与`fiber`节点对应的 dom 节点; 根节点`fiber.stateNode`指向的是`FiberRoot`; class 类型节点其`stateNode`指向的是 class 实例).
+
+2. 用于连接其他 Fiber 节点形成 Fiber 树
+
+   - `fiber.return`: 指向父节点.
+   - `fiber.child`: 指向第一个子节点.
+   - `fiber.sibling`: 指向下一个兄弟节点.
+   - `fiber.index`: fiber 在兄弟节点中的索引, 如果是单节点默认为 0.
+
+3. 特殊的属性
+
+   - `fiber.key`: 和`ReactElement`组件的 key 一致.
+   - `fiber.ref`: 指向在`ReactElement`组件上设置的 ref(`string`类型的`ref`除外, 这种类型的`ref`已经不推荐使用, `reconciler`阶段会`将string`类型的`ref`转换成一个`function`类型).
+
+4. 作为动态的工作单元的属性
+
+   - `fiber.pendingProps`: 输入属性, 从`ReactElement`对象传入的 props. 用于和`fiber.memoizedProps`比较可以得出属性是否变动.
+   - `fiber.memoizedProps`: 上一次生成子节点时用到的属性, 生成子节点之后保持在内存中. 向下生成子节点之前叫做`pendingProps`, 生成子节点之后会把`pendingProps`赋值给`memoizedProps`用于下一次比较.`pendingProps`和`memoizedProps`比较可以得出属性是否变动.
+   - `fiber.updateQueue`: 存储`update更新对象`的队列, 每一次发起更新, 都需要在该队列上创建一个`update对象`.
+   - `fiber.memoizedState`: 上一次生成子节点之后保持在内存中的局部状态.
+   - `fiber.dependencies`: 该 fiber 节点所依赖的(contexts, events)等, 在`context`机制章节详细说明.
+   - `fiber.mode`: 二进制位 Bitfield,继承至父节点,影响本 fiber 节点及其子树中所有节点. 与 react 应用的运行模式有关(有 ConcurrentMode, BlockingMode, NoMode 等选项).
+
+5. 副作用相关
+
+   - `fiber.flags`: 标志位, 副作用标记(在 16.x 版本中叫做`effectTag`, 相应[pr](https://github.com/facebook/react/pull/19755)), 在[`ReactFiberFlags.js`](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberFlags.js#L10-L41)中定义了所有的标志位. `reconciler`阶段会将所有拥有`flags`标记的节点添加到副作用链表中, 等待 commit 阶段的处理.
+   - `fiber.subtreeFlags`: 替代 16.x 版本中的 firstEffect, nextEffect. 默认未开启, 当设置了[enableNewReconciler=true](https://github.com/facebook/react/blob/v17.0.2/packages/shared/ReactFeatureFlags.js#L93) 才会启用, 本系列只跟踪稳定版的代码, 未来版本不会深入解读, [使用示例见源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L690-L714).
+   - `fiber.deletions`: 存储将要被删除的子节点. 默认未开启, 当设置了[enableNewReconciler=true](https://github.com/facebook/react/blob/v17.0.2/packages/shared/ReactFeatureFlags.js#L93) 才会启用, 本系列只跟踪稳定版的代码, 未来版本不会深入解读, [使用示例见源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactChildFiber.new.js#L275-L287).
+   - `fiber.nextEffect`: 单向链表, 指向下一个有副作用的 fiber 节点.
+   - `fiber.firstEffect`: 指向副作用链表中的第一个 fiber 节点.
+   - `fiber.lastEffect`: 指向副作用链表中的最后一个 fiber 节点.
+
+6. 优先级相关
+
+   - `fiber.lanes`: 本 fiber 节点所属的优先级, 创建 fiber 的时候设置.
+   - `fiber.childLanes`: 子节点所属的优先级.
+
+7. 指向该 fiber 在另一次更新时对应的 fiber
+
+   - `fiber.alternate`: 指向内存中的另一个 fiber, 每个被更新过 fiber 节点在内存中都是成对出现(current 和 workInProgress)
 
 通过以上 25 个属性的解释, 对`fiber`对象有一个初步的认识.
 
@@ -267,11 +301,12 @@ export type Fiber = {|
 <img src="../../snapshots/data-structure/reactelement-tree.png" alt="reactelement" width="500">
 <img src="../../snapshots/data-structure/fiber-tree.png" alt="fiber"  width="500">
 </div>
+
 注意:
 
-- 这里的`fiber`树只是为了和上文中的`ReactElement`树对照, 所以只用观察红色虚线框内的节点. 根节点`HostRootFiber`在[react 应用的启动模式章节中](./bootstrap.md)详细解读.
-- 其中`<App/>`,`<Content/>`为`ClassComponent`类型的`fiber`节点, 其余节点都是普通`HostComponent`类型节点.
-- `<Content/>`的子节点在`ReactElement`树中是`React.Fragment`, 但是在`fiber`树中`React.Fragment`并没有与之对应的`fiber`节点(`reconciler`阶段对此类型节点做了单独处理, 所以`ReactElement`节点和`fiber`节点不是一对一匹配).
+1. 这里的`fiber`树只是为了和上文中的`ReactElement`树对照, 所以只用观察红色虚线框内的节点. 根节点`HostRootFiber`在[react 应用的启动模式章节中](./bootstrap.md)详细解读.
+2. 其中`<App/>`,`<Content/>`为`ClassComponent`类型的`fiber`节点, 其余节点都是普通`HostComponent`类型节点.
+3. `<Content/>`的子节点在`ReactElement`树中是`React.Fragment`, 但是在`fiber`树中`React.Fragment`并没有与之对应的`fiber`节点(`reconciler`阶段对此类型节点做了单独处理, 所以`ReactElement`节点和`fiber`节点不是一对一匹配).
 
 ### Update 与 UpdateQueue 对象
 

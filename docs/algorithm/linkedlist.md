@@ -74,6 +74,13 @@ function LinkedList() {
 }
 ```
 
+## 链表反转的方法
+
+1. dumppy
+2. 双指针
+
+<a href="https://zhuanlan.zhihu.com/p/541077037" target="_blank" >三张动图带你轻松拿下各类链表反转</a>
+
 ## React 当中的使用场景
 
 在 react 中, 链表的使用非常高频, 主要集中在`fiber`和`hook`对象的属性中.
@@ -179,6 +186,7 @@ function LinkedList() {
      ![](../../snapshots/linkedlist/fiber.updatequeue-merge-after.png)
 
 2. `function`组件中
+
    - 在`function`组件中使用`Hook`对象(`useState`), 并改变`Hook`对象的值(内部会调用`dispatchAction`), 此时也会创建`update(hook)`对象并添加到`hook.queue.pending`链式队列([源码地址](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberHooks.old.js#L1645-L1682)).
    - `hook.queue.pending`也是一个环形链表(与`fiber.updateQueue.shared.pending`的结构很相似)
 
@@ -203,34 +211,41 @@ function LinkedList() {
 
    - 在`fiber`树构建阶段(或`reconciler`阶段), 会将`hook.queue.pending`合并到`hook.baseQueue`队列上([源码地址](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberHooks.old.js#L672-L694)).
 
-        ```js
-          function updateReducer<S, I, A>(
-            reducer: (S, A) => S,
-            initialArg: I,
-            init?: I => S,
-          ): [S, Dispatch<A>] {
-            // ... 省略部分代码
-            if (pendingQueue !== null) {
-              if (baseQueue !== null) {
-                // 在这里进行队列的合并
-                const baseFirst = baseQueue.next;
-                const pendingFirst = pendingQueue.next;
-                baseQueue.next = pendingFirst;
-                pendingQueue.next = baseFirst;
-              }
-              current.baseQueue = baseQueue = pendingQueue;
-              queue.pending = null;
-            }
-          }
-        ```
+     ```js
+     function updateReducer<S, I, A>(
+       reducer: (S, A) => S,
+       initialArg: I,
+       init?: I => S,
+     ): [S, Dispatch<A>] {
+       // ... 省略部分代码
+       if (pendingQueue !== null) {
+         if (baseQueue !== null) {
+           // 在这里进行队列的合并
+           const baseFirst = baseQueue.next;
+           const pendingFirst = pendingQueue.next;
+           baseQueue.next = pendingFirst;
+           pendingQueue.next = baseFirst;
+         }
+         current.baseQueue = baseQueue = pendingQueue;
+         queue.pending = null;
+       }
+     }
+     ```
 
-        ![](../../snapshots/linkedlist/hook.baseQueue-merge-before.png)
+     ![](../../snapshots/linkedlist/hook.baseQueue-merge-before.png)
 
-        ![](../../snapshots/linkedlist/hook.baseQueue-merge-after.png)
+     ![](../../snapshots/linkedlist/hook.baseQueue-merge-after.png)
 
 ## 总结
 
 本节主要介绍了`链表`的概念和它在`react`源码中的使用情况. `react`中主要的数据结构都和链表有关, 使用非常高频. 源码中`链表合并`, `环形链表拆解`, `链表遍历`的代码篇幅很多, 所以深入理解链表的使用, 对理解`react原理`大有益处.
+
+## Q&A
+
+1. baseUpdate 是什么？有什么用？为什么要这么设计
+2. valueCursor，`_currentValue`是什么
+
+<img src="http://t-blog-images.aijs.top/img/202303191246791.webp" />
 
 ## 参考资料
 

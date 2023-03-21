@@ -8,11 +8,11 @@ title: 调和算法
 
 调和函数([源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactChildFiber.old.js#L1274-L1410))是在`fiber树构(对比更新)`过程中对`旧fiber节点`与`新reactElement`进行比较, 判定`旧fiber节点`是否可以复用的一个比较函数.
 
-调和函数仅是`fiber树构造`过程中的一个环节, 所以在深入理解这个函数之前, 建议对`fiber树构造`有一个宏观的理解(可以参考前文[fiber 树构造(初次创建)](../main/fibertree-create.md), [fiber 树构造(对比更新)](../main/fibertree-update.md)), 本节重点探讨其算法的实现细节. 
+调和函数仅是`fiber树构造`过程中的一个环节, 所以在深入理解这个函数之前, 建议对`fiber树构造`有一个宏观的理解(可以参考前文[fiber 树构造(初次创建)](../main/fibertree-create.md), [fiber 树构造(对比更新)](../main/fibertree-update.md)), 本节重点探讨其算法的实现细节.
 
 它的主要作用:
 
-1. 给新增,移动,和删除节点设置`fiber.flags`(新增, 移动: `Placement`, 删除: `Deletion`)
+1. 给（新增,移动,和删除）节点设置`fiber.flags`(新增, 移动: `Placement`, 删除: `Deletion`)
 2. 如果是需要删除的`fiber`, [除了自身打上`Deletion`之外, 还要将其添加到父节点的`effects`链表中](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactChildFiber.old.js#L275-L294)(正常副作用队列的处理是在`completeWork`函数, 但是该节点(被删除)会脱离`fiber`树, 不会再进入`completeWork`阶段, 所以在`beginWork`阶段提前加入副作用队列).
 
 ## 特性
@@ -51,7 +51,8 @@ function reconcileSingleElement(
         // 只看核心逻辑
         default: {
           if (child.elementType === element.type) {
-            // 1.1 已经匹配上了, 如果有兄弟节点, 需要给兄弟节点打上Deletion标记
+            // 1.1 已经匹配上了, 如果有兄弟节点, 需要给兄弟节点打上Deletion标记，
+            // QUES: 奇怪，怎么要删除兄弟节点, 这里要注意个大前提是单节点比较，除此之外key一致
             deleteRemainingChildren(returnFiber, child.sibling);
             // 1.2 构造fiber节点, 新的fiber对象会复用current.stateNode, 即可复用DOM对象
             const existing = useFiber(child, element.props);
@@ -62,7 +63,7 @@ function reconcileSingleElement(
           break;
         }
       }
-      // Didn't match. 给当前节点点打上Deletion标记
+      // Didn't match. 将该fiber及其兄弟fiber标记为删除
       deleteRemainingChildren(returnFiber, child);
       break;
     } else {
@@ -83,6 +84,10 @@ function reconcileSingleElement(
   return created;
 }
 ```
+
+### 对于上文 QUES: 解答
+
+<img src="http://t-blog-images.aijs.top/img/202303171431263.webp" />
 
 1. 如果是新增节点, 直接新建 fiber, 没有多余的逻辑
 2. 如果是对比更新
@@ -186,7 +191,7 @@ function reconcileChildrenArray(
    - 如果`newChildren序列`被遍历完, 那么`oldFiber序列`中剩余节点都视为删除(打上`Deletion`标记)
    - 如果`oldFiber序列`被遍历完, 那么`newChildren序列`中剩余节点都视为新增(打上`Placement`标记)
 2. 第二次循环: 遍历剩余`非公共`序列, 优先复用 oldFiber 序列中的节点
-   - 在对比更新阶段(非初次创建`fiber`, 此时`shouldTrackSideEffects`被设置为true). 第二次循环遍历完成之后, `oldFiber序列中`没有匹配上的节点都视为删除(打上`Deletion`标记)
+   - 在对比更新阶段(非初次创建`fiber`, 此时`shouldTrackSideEffects`被设置为 true). 第二次循环遍历完成之后, `oldFiber序列中`没有匹配上的节点都视为删除(打上`Deletion`标记)
 
 假设有如下图所示 2 个初始化序列:
 
@@ -206,7 +211,7 @@ function reconcileChildrenArray(
 
 整个主干逻辑就介绍完了, 接下来贴上完整源码
 
-> 第一次循环
+### 第一次循环
 
 ```js
 // 1. 第一次循环: 遍历最长公共序列(key相同), 公共序列的节点都视为可复用
@@ -255,7 +260,7 @@ for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 }
 ```
 
-> 第二次循环
+### 第二次循环
 
 ```js
 // 1. 将第一次循环后, oldFiber剩余序列加入到一个map中. 目的是为了第二次循环能顺利的找到可复用节点
@@ -299,4 +304,8 @@ if (shouldTrackSideEffects) {
 
 ## 总结
 
-本节介绍了 React 源码中, `fiber构造循环`阶段用于生成下级子节点的`reconcileChildren`函数(函数中的算法被称为调和算法), 并演示了`可迭代节点比较`的图解示例. 该算法十分巧妙, 其核心逻辑把`newChildren序列`分为 2 步遍历, 先遍历公共序列, 再遍历非公共部分, 同时复用`oldFiber`序列中的节点.
+本节介绍了 React 源码中,
+
+1. `fiber构造循环`阶段用于生成下级子节点的`reconcileChildren`函数(函数中的算法被称为调和算法),
+2. 并演示了`可迭代节点比较`的图解示例.
+3. 该算法十分巧妙, 其核心逻辑把`newChildren序列`分为 2 步遍历, 先遍历公共序列, 再遍历非公共部分, 同时复用`oldFiber`序列中的节点.

@@ -413,4 +413,6 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
 
 ## 总结
 
-本节主要分析了`scheduler`包中`调度原理`, 也就是`React两大工作循环`中的`任务调度循环`. 并介绍了`时间切片`和`可中断渲染`等特性在`任务调度循环`中的实现. `scheduler`包是`React`运行时的心脏, 为了提升调度性能, 注册`task`之前, 在`react-reconciler`包中做了节流和防抖等措施.
+1. 本节主要分析了`scheduler`包中`调度原理`, 也就是`React两大工作循环`中的`任务调度循环`.
+2. 并介绍了`时间切片`和`可中断渲染`等特性在`任务调度循环`中的实现.
+3. `scheduler`包是`React`运行时的心脏, 为了提升调度性能, 注册`task`之前, 在`react-reconciler`包中做了节流和防抖等措施.

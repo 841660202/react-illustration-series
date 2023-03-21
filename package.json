@@ -3,7 +3,7 @@
   "name": "react-illustration-series",
   "version": "1.0.0",
   "scripts": {
-    "start": "dumi dev",
+    "dev": "dumi dev",
     "build": "dumi build",
     "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'"
   },

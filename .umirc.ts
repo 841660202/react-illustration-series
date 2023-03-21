@@ -49,10 +49,18 @@ export default defineConfig({
         title: '交互',
         children: ['main/synthetic-event.md'],
       },
+      {
+        title: '补充',
+        children: ['main/replenish.md'],
+      },
     ],
   },
   navs: [
     null,
+    {
+      title: '揭秘',
+      path: 'https://react.iamkasong.com/',
+    },
     {
       title: 'GitHub',
       path: 'https://github.com/7kms/react-illustration-series',

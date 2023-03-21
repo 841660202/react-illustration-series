@@ -155,7 +155,13 @@ export function scheduleUpdateOnFiber(
 }
 ```
 
-在 render 过程中, 每一个阶段都会改变`executionContext`(render 之前, 会设置`executionContext |= RenderContext`; commit 之前, 会设置`executionContext |= CommitContext`), 假设在`render`过程中再次发起更新(如在`UNSAFE_componentWillReceiveProps`生命周期中调用`setState`)则可通过`executionContext`来判断当前的`render`状态.
+在 render 过程中, 每一个阶段都会改变`executionContext`(
+
+1. render 之前, 会设置`executionContext |= RenderContext`;
+2. commit 之前, 会设置`executionContext |= CommitContext`
+
+),
+假设在`render`过程中再次发起更新(如在`UNSAFE_componentWillReceiveProps`生命周期中调用`setState`)则可通过`executionContext`来判断当前的`render`状态.
 
 ### 双缓冲技术(double buffering)
 
@@ -406,7 +412,6 @@ export function getNextLanes(root: FiberRoot, wipLanes: Lanes): Lanes {
 
 此处返回的`lanes`会作为全局渲染的优先级, 用于`fiber树构造过程`中. 针对`fiber对象`或`update对象`, 只要它们的优先级(如: `fiber.lanes`和`update.lane`)比`渲染优先级`低, 都将会被忽略.
 
-
 #### `fiber`优先级(fiber.lanes)
 
 在[React 应用中的高频对象](./object-structure.md)一文中, 介绍过`fiber`对象的数据结构. 其中有 2 个属性与优先级相关:
@@ -472,6 +477,8 @@ function beginWork(
 
 所以在进行`fiber树`构造之前, 如果不需要恢复上一次构造进度, 都会刷新栈帧(源码在[prepareFreshStack 函数](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L1301-L1337))
 
+#### renderRootConcurrent
+
 ```js
 function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
   const prevExecutionContext = executionContext;
@@ -485,7 +492,11 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
     startWorkOnPendingInteractions(root, lanes);
   }
 }
+```
 
+#### prepareFreshStack
+
+```js
 /**
 刷新栈帧: 重置 FiberRoot上的全局属性 和 `fiber树构造`循环过程中的全局变量
 */
@@ -517,8 +528,16 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes) {
 }
 ```
 
-注意其中的`createWorkInProgress(root.current, null)`, 其参数`root.current`即`HostRootFiber`, 作用是给`HostRootFiber`创建一个`alternate`副本.`workInProgress`指针指向这个副本(即`workInProgress = HostRootFiber.alternate`), 在上文`double buffering`中分析过, `HostRootFiber.alternate`是`正在构造的fiber树`的根节点.
+注意
+
+1. 其中的`createWorkInProgress(root.current, null)`, 其参数`root.current`即`HostRootFiber`, 作用是给`HostRootFiber`创建一个`alternate`副本.
+2. `workInProgress`指针指向这个副本(即`workInProgress = HostRootFiber.alternate`), 在上文`double buffering`中分析过, `HostRootFiber.alternate`是`正在构造的fiber树`的根节点.
 
 ## 总结
 
-本节是`fiber树构造`的准备篇, 首先在宏观上从不同的视角(`任务调度循环`, `fiber树构造循环`)介绍了`fiber树构造`在`React`体系中所处的位置, 然后深入`react-reconciler`包分析`fiber树构造`过程中需要使用到的全局变量, 并解读了`双缓冲技术`和`优先级(车道模型)`的使用, 最后解释`栈帧管理`的实现细节. 有了这些基础知识, `fiber树构造`的具体实现过程会更加简单清晰.
+本节是`fiber树构造`的准备篇,
+
+1. 首先在宏观上从不同的视角(`任务调度循环`, `fiber树构造循环`)介绍了`fiber树构造`在`React`体系中所处的位置,
+2. 然后深入`react-reconciler`包分析`fiber树构造`过程中需要使用到的全局变量,
+3. 并解读了`双缓冲技术`和`优先级(车道模型)`的使用,
+4. 最后解释`栈帧管理`的实现细节. 有了这些基础知识, `fiber树构造`的具体实现过程会更加简单清晰.

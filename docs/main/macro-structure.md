@@ -22,17 +22,23 @@ title: 宏观包结构
    > react 得以运行的核心包(综合协调`react-dom`,`react`,`scheduler`各包之间的调用与配合).
    > 管理 react 应用状态的输入和结果的输出. 将输入信号最终转换成输出信号传递给渲染器.
 
-   - 接受输入(`scheduleUpdateOnFiber`), 将`fiber`树生成逻辑封装到一个回调函数中(涉及`fiber`树形结构, `fiber.updateQueue`队列, 调和算法等),
-   - 把此回调函数(`performSyncWorkOnRoot`或`performConcurrentWorkOnRoot`)送入`scheduler`进行调度
-   - `scheduler`会控制回调函数执行的时机, 回调函数执行完成后得到全新的 fiber 树
-   - 再调用渲染器(如`react-dom`, `react-native`等)将 fiber 树形结构最终反映到界面上
+   1. 接受输入(`scheduleUpdateOnFiber`), 将`fiber`树生成逻辑封装到一个回调函数中(涉及`fiber`树形结构, `fiber.updateQueue`队列, 调和算法等),
+   2. 把此回调函数(`performSyncWorkOnRoot`或`performConcurrentWorkOnRoot`)送入`scheduler`进行调度
+   3. `scheduler`会控制回调函数执行的时机, 回调函数执行完成后得到全新的 fiber 树
+   4. 再调用渲染器(如`react-dom`, `react-native`等)将 fiber 树形结构最终反映到界面上
 
 4. scheduler
 
-   > 调度机制的核心实现, 控制由`react-reconciler`送入的回调函数的执行时机, 在`concurrent`模式下可以实现任务分片. 在编写`react`应用的代码时, 同样几乎不会直接用到此包提供的 api.
+   > 调度机制的核心实现,
+   >
+   > 控制由`react-reconciler`送入的回调函数的执行时机,
+   >
+   > 在`concurrent`模式下可以实现任务分片.
+   >
+   > 在编写`react`应用的代码时, 同样几乎不会直接用到此包提供的 api.
 
-   - 核心任务就是执行回调(回调函数由`react-reconciler`提供)
-   - 通过控制回调函数的执行时机, 来达到任务分片的目的, 实现可中断渲染(`concurrent`模式下才有此特性)
+   1. 核心任务就是执行回调(回调函数由`react-reconciler`提供)
+   2. 通过控制回调函数的执行时机, 来达到任务分片的目的, 实现可中断渲染(`concurrent`模式下才有此特性)
 
 ## 宏观总览
 

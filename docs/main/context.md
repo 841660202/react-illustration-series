@@ -144,6 +144,11 @@ export function pushProvider<T>(providerFiber: Fiber, nextValue: T): void {
      let newChildren;
 
      // ...省略无关代码
+
+     // React DevTools reads this flag.
+     workInProgress.flags |= PerformedWork;
+     reconcileChildren(current, workInProgress, newChildren, renderLanes);
+     return workInProgress.child;
    }
    ```
 

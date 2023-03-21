@@ -10,7 +10,7 @@ title: 合成事件
 
 引入官方提供的图片:
 
-![](https://zh-hans.reactjs.org/static/bb4b10114882a50090b8ff61b3c4d0fd/1e088/react_17_delegation.png)
+<img src="https://zh-hans.reactjs.org/static/bb4b10114882a50090b8ff61b3c4d0fd/1e088/react_17_delegation.png" style="width:500px;max-width:100%" />
 
 图中清晰的展示了`v17.0.0`的改动, 无论是在`document`还是`根 DOM 容器`上监听事件, 都可以归为`事件委托(代理)`([mdn](https://developer.mozilla.org/zh-CN/docs/Learn/JavaScript/Building_blocks/Events)).
 
@@ -153,7 +153,7 @@ export function addEventBubbleListener(
   eventType: string,
   listener: Function,
 ): Function {
-  target.addEventListener(eventType, listener, false);
+  target.addEventListener(eventType, listener, false); // listener,在此处被调用，传入了nativeEvent
   return listener;
 }
 
@@ -163,7 +163,7 @@ export function addEventCaptureListener(
   eventType: string,
   listener: Function,
 ): Function {
-  target.addEventListener(eventType, listener, true);
+  target.addEventListener(eventType, listener, true); // listener,在此处被调用，传入了nativeEvent
   return listener;
 }
 ```
@@ -244,7 +244,7 @@ export function dispatchEvent(
 
 当原生事件触发之后, 首先会进入到`dispatchEvent`这个回调函数. 而`dispatchEvent`函数是`react`事件体系中最关键的函数, 其调用链路较长, 核心步骤如图所示:
 
-![](../../snapshots/synthetic-event/dispatch-event.png)
+<img src="../../snapshots/synthetic-event/dispatch-event.png" style="width:500px;max-width:100%" />
 
 重点关注其中 3 个核心环节:
 
@@ -384,11 +384,19 @@ function extractEvents(
 
 ### 构造合成事件
 
-[SyntheticEvent](https://github.com/facebook/react/blob/v17.0.2/packages/react-dom/src/events/SyntheticEvent.js#L152), 是`react`内部创建的一个对象, 是原生事件的跨浏览器包装器, 拥有和浏览器原生事件相同的接口(`stopPropagation`,`preventDefault`), 抹平不同浏览器 api 的差异, 兼容性好.
+[SyntheticEvent](https://github.com/facebook/react/blob/v17.0.2/packages/react-dom/src/events/SyntheticEvent.js#L152),
+
+1. 是`react`内部创建的一个对象,
+2. 是原生事件的跨浏览器包装器,
+3. 拥有和浏览器原生事件相同的接口(`stopPropagation`,`preventDefault`), 抹平不同浏览器 api 的差异, 兼容性好.
 
 具体的构造过程并不复杂, 可以直接[查看源码](https://github.com/facebook/react/blob/v17.0.2/packages/react-dom/src/events/SyntheticEvent.js#L28-L136).
 
-此处我们需要知道, 在`Plugin.extractEvents`过程中, 遍历`fiber树`找到`listener`之后, 就会创建`SyntheticEvent`, 加入到`dispatchQueue`中, 等待派发.
+此处我们需要知道, 在`Plugin.extractEvents`过程中, <a href="/main/synthetic-event#%E6%94%B6%E9%9B%86-fiber-%E4%B8%8A%E7%9A%84-listener" target="_blank" >见</a>
+
+1. 遍历`fiber树`找到`listener`之后,
+2. 就会创建`SyntheticEvent`,
+3. 加入到`dispatchQueue`中, 等待派发.
 
 ### 执行派发
 
@@ -446,9 +454,15 @@ function processDispatchQueueItemsInOrder(
 
 ## 总结
 
-从架构上来讲, [SyntheticEvent](https://github.com/facebook/react/blob/v17.0.2/packages/react-dom/src/events/SyntheticEvent.js#L152)打通了从外部`原生事件`到内部`fiber树`的交互渠道, 使得`react`能够感知到浏览器提供的`原生事件`, 进而做出不同的响应, 修改`fiber树`, 变更视图等.
+[SyntheticEvent](https://github.com/facebook/react/blob/v17.0.2/packages/react-dom/src/events/SyntheticEvent.js#L152)
 
-从实现上讲, 主要分为 3 步:
+### 从架构上来讲,
+
+1. 打通了从外部`原生事件`到内部`fiber树`的交互渠道,
+2. 使得`react`能够感知到浏览器提供的`原生事件`,
+3. 进而做出不同的响应, 修改`fiber树`, 变更视图等.
+
+### 从实现上讲, 主要分为 3 步:
 
 1. 监听原生事件: 对齐`DOM元素`和`fiber元素`
 2. 收集`listeners`: 遍历`fiber树`, 收集所有监听本事件的`listener`函数.

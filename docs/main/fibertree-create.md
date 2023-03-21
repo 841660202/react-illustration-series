@@ -187,7 +187,15 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
 }
 ```
 
-在`renderRootSync`中, 在执行`fiber树构造`前(`workLoopSync`)会先刷新栈帧`prepareFreshStack`(参考[fiber 树构造(基础准备)](./fibertree-prepare.md#栈帧管理)).在这里创建了`HostRootFiber.alternate`, 重置全局变量`workInProgress`和`workInProgressRoot`等.
+??????
+在`renderRootSync`中, 在执行`fiber树构造`前(`workLoopSync`)会先刷新栈帧`prepareFreshStack`(参考 <a href="./fibertree-prepare.md#preparefreshstack" target="_blank" >fiber 树构造(基础准备)</a>).
+
+<span style="color: red">是 prepareFreshStack 内部的代码</span> <br/>
+在这里创建了`HostRootFiber.alternate`, 重置全局变量`workInProgress`和`workInProgressRoot`等.
+
+### HostRootFiber.alternate
+
+<img src="http://t-blog-images.aijs.top/img/202303211723250.webp" />
 
 ![](./../../snapshots/fibertree-create/status-freshstack.png)
 
@@ -573,7 +581,7 @@ function completeWork(
 
 - `beginWork`执行前: `workInProgress`指针指向`fiber(header)`节点, 此时`current = null`
 - `beginWork`执行过程: 调用`updateHostComponent`
-  - 本示例中`header`的子节点是一个[直接文本节点](https://github.com/facebook/react/blob/8e5adfbd7e605bda9c5e96c10e015b3dc0df688e/packages/react-dom/src/client/ReactDOMHostConfig.js#L350-L361),设置[nextChildren = null](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L1147)(直接文本节点并不会被当成具体的`fiber`节点进行处理, 而是在宿主环境(父组件)中通过属性进行设置. 所以无需创建`HostText`类型的fiber节点, 同时节省了向下遍历开销.).
+  - 本示例中`header`的子节点是一个[直接文本节点](https://github.com/facebook/react/blob/8e5adfbd7e605bda9c5e96c10e015b3dc0df688e/packages/react-dom/src/client/ReactDOMHostConfig.js#L350-L361),设置[nextChildren = null](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L1147)(直接文本节点并不会被当成具体的`fiber`节点进行处理, 而是在宿主环境(父组件)中通过属性进行设置. 所以无需创建`HostText`类型的 fiber 节点, 同时节省了向下遍历开销.).
   - 由于`nextChildren = null`, 经过`reconcileChildren`阶段处理后, 返回值也是`null`
 - `beginWork`执行后: 由于下级节点为`null`, 所以进入`completeUnitOfWork(unitOfWork)`函数, 传入的参数`unitOfWork`实际上就是`workInProgress`(此时指向`fiber(header)`节点)
 
