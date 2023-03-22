@@ -57,7 +57,11 @@ export default App;
 
 ## 更新入口
 
-前文[reconciler 运作流程](./reconciler-workflow.md#输入)中总结的 4 个阶段(从输入到输出), 其中承接输入的函数只有`scheduleUpdateOnFiber`([源码地址](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L517-L619)).在`react-reconciler`对外暴露的 api 函数中, 只要涉及到需要改变 fiber 的操作(无论是`首次渲染`或`对比更新`), 最后都会间接调用`scheduleUpdateOnFiber`, `scheduleUpdateOnFiber`函数是输入链路中的`必经之路`.
+前文[reconciler 运作流程](./reconciler-workflow.md#输入)中总结的 4 个阶段(从输入到输出),
+
+1. 其中承接输入的函数只有`scheduleUpdateOnFiber`([源码地址](https://github.com/facebook/react/blob/v17.0.2/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L517-L619)).
+2. 在`react-reconciler`对外暴露的 api 函数中, 只要涉及到需要改变 fiber 的操作(无论是`首次渲染`或`对比更新`),
+3. 最后都会间接调用`scheduleUpdateOnFiber`, `scheduleUpdateOnFiber`函数是输入链路中的`必经之路`.
 
 ### 3 种更新方式
 
@@ -685,4 +689,6 @@ updateHostText = function(
 
 ## 总结
 
-本节演示了更新阶段`fiber树构造(对比更新)`的全部过程, 跟踪了创建过程中内存引用的变化情况. 与`初次构造`最大的不同在于`fiber节点`是否可以复用, 其中`bailout`逻辑是`fiber子树`能否复用的判断依据.
+1. 本节演示了更新阶段`fiber树构造(对比更新)`的全部过程, 跟踪了创建过程中内存引用的变化情况.
+2. 与`初次构造`最大的不同在于`fiber节点`是否可以复用,
+3. 其中`bailout`逻辑是`fiber子树`能否复用的判断依据.
