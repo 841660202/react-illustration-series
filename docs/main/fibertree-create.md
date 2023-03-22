@@ -798,6 +798,8 @@ function setInitialDOMProperties(
 
 ![](../../snapshots/fibertree-create/unitofwork0.png)
 
+### HostRootFiber
+
 `performUnitOfWork`第 1 次调用(只执行`beginWork`):
 
 - 执行前: `workInProgress`指针指向`HostRootFiber.alternate`对象, 此时`current = workInProgress.alternate`指向`fiberRoot.current`是非空的(初次构造, 只在根节点时, `current`非空).
@@ -806,6 +808,8 @@ function setInitialDOMProperties(
 - 执行后: 返回下级节点`fiber(<App/>)`, 移动`workInProgress`指针指向子节点`fiber(<App/>)`
 
 ![](../../snapshots/fibertree-create/unitofwork1.png)
+
+### App
 
 `performUnitOfWork`第 2 次调用(只执行`beginWork`):
 
@@ -819,6 +823,8 @@ function setInitialDOMProperties(
 
 ![](../../snapshots/fibertree-create/unitofwork2.png)
 
+### div
+
 `performUnitOfWork`第 3 次调用(只执行`beginWork`):
 
 - 执行前: `workInProgress`指针指向`fiber(div)`节点, 此时`current = null`
@@ -827,6 +833,8 @@ function setInitialDOMProperties(
 - 执行后: 返回下级节点`fiber(header)`, 移动`workInProgress`指针指向子节点`fiber(header)`
 
 ![](../../snapshots/fibertree-create/unitofwork3.png)
+
+### header
 
 `performUnitOfWork`第 4 次调用(执行`beginWork`和`completeUnitOfWork`):
 
@@ -841,6 +849,8 @@ function setInitialDOMProperties(
 - `completeUnitOfWork`执行前: `workInProgress`指针指向`fiber(header)`节点
 - `completeUnitOfWork`执行过程: 以`fiber(header)`为起点, 向上回溯
 
+### `<Content/>`
+
 第 1 次循环:
 
 1.  执行`completeWork`函数
@@ -851,6 +861,8 @@ function setInitialDOMProperties(
 
 ![](../../snapshots/fibertree-create/unitofwork4.2.png)
 
+### `<Content/> p1`
+
 `performUnitOfWork`第 5 次调用(执行`beginWork`):
 
 - 执行前:`workInProgress`指针指向`fiber(<Content/>)`节点.
@@ -858,6 +870,8 @@ function setInitialDOMProperties(
 - 执行后: 返回下级节点`fiber(p)`, 移动`workInProgress`指针指向子节点`fiber(p)`
 
 ![](../../snapshots/fibertree-create/unitofwork5.png)
+
+### `<Content/> p2`
 
 `performUnitOfWork`第 6 次调用(执行`beginWork`和`completeUnitOfWork`):与第 4 次调用中创建`fiber(header)`节点的逻辑一致. 先后会执行`beginWork`和`completeUnitOfWork`, 最后构造 DOM 实例, 并将把`workInProgress`指针指向下一个兄弟节点`fiber(p)`.
 
@@ -868,6 +882,8 @@ function setInitialDOMProperties(
 - `beginWork`执行过程: 与上次调用中创建`fiber(p)`节点的逻辑一致
 - `completeUnitOfWork`执行过程: 以`fiber(p)`为起点, 向上回溯
 
+### `<Content/>`
+
 第 1 次循环:
 
 1.  执行`completeWork`函数: 创建`fiber(p)`节点对应的`DOM`实例, 并`append`子树节点的`DOM`实例
@@ -876,14 +892,18 @@ function setInitialDOMProperties(
 
 ![](../../snapshots/fibertree-create/unitofwork7.png)
 
+### `<div/>`
+
 第 2 次循环:
 
 1. 执行`completeWork`函数: class 类型的节点不做处理
 2. 上移副作用队列:
-   - 本节点`fiber(<Content/>)`的`flags`标志位有改动(`completedWork.flags > PerformedWork`), 将本节点添加到父节点(`fiber(div)`)的副作用队列之后(`firstEffect`和`lastEffect`属性分别指向副作用队列的首部和尾部).
+   - 本节点`fiber(<Content/>)`的`flags`标志位有改动(`completedWork.flags > PerformedWork`)<span style="color: red">因为有生命周期</span>, 将本节点添加到父节点(`fiber(div)`)的副作用队列之后(`firstEffect`和`lastEffect`属性分别指向副作用队列的首部和尾部).
 3. 向上回溯: 把`workInProgress`指针指向父节点`fiber(div)`
 
 ![](../../snapshots/fibertree-create/unitofwork7.1.png)
+
+### `<App/>`
 
 第 3 次循环:
 
@@ -893,6 +913,8 @@ function setInitialDOMProperties(
 3. 向上回溯: 把`workInProgress`指针指向父节点`fiber(<App/>)`
 
 ![](../../snapshots/fibertree-create/unitofwork7.2.png)
+
+### HostRootFiber
 
 第 4 次循环:
 
@@ -920,4 +942,7 @@ function setInitialDOMProperties(
 
 ## 总结
 
-本节演示了初次创建`fiber树`的全部过程, 跟踪了创建过程中内存引用的变化情况. `fiber树构造循环`负责构造新的`fiber`树, 构造过程中同时标记`fiber.flags`, 最终把所有被标记的`fiber`节点收集到一个副作用队列中, 这个副作用队列被挂载到根节点上(`HostRootFiber.alternate.firstEffect`). 此时的`fiber树`和与之对应的`DOM节点`都还在内存当中, 等待`commitRoot`阶段进行渲染.
+1. 本节演示了初次创建`fiber树`的全部过程, 跟踪了创建过程中内存引用的变化情况.
+2. `fiber树构造循环`负责构造新的`fiber`树, 构造过程中同时标记`fiber.flags`,
+3. 最终把所有被标记的`fiber`节点收集到一个副作用队列中, 这个副作用队列被挂载到根节点上(`HostRootFiber.alternate.firstEffect`).
+4. 此时的`fiber树`和与之对应的`DOM节点`都还在内存当中, 等待`commitRoot`阶段进行渲染.
