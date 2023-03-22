@@ -232,7 +232,7 @@ function markUpdateLaneFromFiberToRoot(
 
 下图表示了`markUpdateLaneFromFiberToRoot`的具体作用:
 
-- 以`sourceFiber`为起点, 设置起点的`fiber.lanes`
+- 以`sourceFiber`为起点, 设置起点的`fiber.lanes` <span style="color: red;text-decoration: underline;">sourceFiber 对应 scheduleUpdateOnFiber 传入的 fiber，也就是本次更新对应的类组件/函数组件/render(rootFiber)</span>
 - 从起点开始, 直到`HostRootFiber`, 设置父路径上所有节点(也包括`fiber.alternate`)的`fiber.childLanes`.
 - 通过设置`fiber.lanes`和`fiber.childLanes`就可以辅助判断子树是否需要更新(在下文`循环构造`中详细说明).
 
